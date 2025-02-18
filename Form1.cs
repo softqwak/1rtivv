@@ -38,7 +38,7 @@
                 }
             }
 
-            if (valid && finalStates.Contains(currentState))
+            if (valid)
             {
                 lblResult.Text = "Распознано!";
                 lblResult.ForeColor = Color.Green;
@@ -53,22 +53,55 @@
             lstPath.Items.AddRange(path.ToArray());
         }
 
-        private void btnSetTransitions_Click(object sender, EventArgs e)
+        private void btnExample1_Click(object sender, EventArgs e)
         {
-            transitions.Clear();
-            initialState = txtInitialState.Text;
-            finalStates = txtFinalStates.Text.Split(',').Select(s => s.Trim()).ToList();
-
-            foreach (DataGridViewRow row in dgvTransitions.Rows)
+            PopulateTable(new List<(string, char, string)>
             {
-                if (row.Cells[0].Value == null || row.Cells[1].Value == null || row.Cells[2].Value == null)
-                    continue;
+                ("q0", 'a', "q1"),
+                ("q1", 'b', "q2"),
+                ("q2", 'a', "q3"),
+                ("q3", 'b', "q0"),
+                ("q3", 'a', "q2")
+            }, "q0", new List<string> { "q3" });
+        }
 
-                string fromState = row.Cells[0].Value.ToString();
-                char symbol = row.Cells[1].Value.ToString()[0];
-                string toState = row.Cells[2].Value.ToString();
+        private void btnExample2_Click(object sender, EventArgs e)
+        {
+            PopulateTable(new List<(string, char, string)>
+            {
+                ("q0", '0', "q1"),
+                ("q1", '1', "q2"),
+                ("q2", '0', "q3"),
+                ("q3", '1', "q0"),
+                ("q3", '0', "q2")
+            }, "q0", new List<string> { "q3" });
+        }
 
-                transitions[(fromState, symbol)] = toState;
+        private void btnExample3_Click(object sender, EventArgs e)
+        {
+            PopulateTable(new List<(string, char, string)>
+            {
+                ("q0", 'x', "q1"),
+                ("q0", 'y', "q1"),
+                ("q0", 'z', "q1"),
+                ("q1", 'y', "q2"),
+                ("q2", 'z', "q3"),
+                ("q3", 'x', "q1"),
+                ("q2", 'x', "q1")
+            }, "q0", new List<string> { "q3" });
+        }
+
+        private void PopulateTable(List<(string, char, string)> transitionsList, string startState, List<string> endStates)
+        {
+            dgvTransitions.Rows.Clear();
+            transitions.Clear();
+            initialState = startState;
+            finalStates = endStates;
+
+            foreach (var (from, symbol, to) in transitionsList)
+            {
+                dgvTransitions.Rows.Add(from, symbol.ToString(), to);
+                transitions[(from, symbol)] = to;
             }
         }
 
@@ -88,6 +121,16 @@
         }
 
         private void dgvTransitions_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void lstPath_SelectedIndexChanged(object sender, EventArgs e)
         {
 
         }
