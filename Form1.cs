@@ -1,9 +1,12 @@
-﻿namespace rtivv1
+﻿using System.Diagnostics;
+using System.Windows.Forms;
+
+namespace rtivv1
 {
     public partial class Form1 : Form
     {
 
-        private Dictionary<(string, char), string> transitions = new();
+        private Dictionary<(string, string), string> transitions = new();
         private string initialState;
         private List<string> finalStates = new();
 
@@ -12,30 +15,33 @@
             InitializeComponent();
         }
 
-        private void Form1_Load(object sender, EventArgs e)
-        {
-
-        }
-
         private void btnRecognize_Click(object sender, EventArgs e)
         {
             string input = txtInput.Text;
-            string currentState = initialState;
+            // Старт распознования начинается из 1 состояния
+            string currentState = "1";
             List<string> path = new() { currentState };
-            bool valid = true;
+            bool valid = false;
 
             foreach (char symbol in input)
             {
-                if (transitions.TryGetValue((currentState, symbol), out string nextState))
-                {
-                    currentState = nextState;
-                    path.Add(currentState);
-                }
-                else
-                {
-                    valid = false;
-                    break;
-                }
+                /*
+                 * Создать алгоритм определения символа(цифра, точка, +-, е)
+                 * symbol(any) -> nonTerminalSymbol
+                 * 
+                 * В дополнении к path должна быть подсветка ячеек таблицы
+                 */
+
+                //if (transitions.TryGetValue((currentState, nonTerminalSymbol), out string nextState))
+                //{
+                //    currentState = nextState;
+                //    path.Add(currentState);
+                //}
+                //else
+                //{
+                //    valid = false;
+                //    break;
+                //}
             }
 
             if (valid)
@@ -53,58 +59,6 @@
             lstPath.Items.AddRange(path.ToArray());
         }
 
-        private void btnExample1_Click(object sender, EventArgs e)
-        {
-            PopulateTable(new List<(string, char, string)>
-            {
-                ("q0", 'a', "q1"),
-                ("q1", 'b', "q2"),
-                ("q2", 'a', "q3"),
-                ("q3", 'b', "q0"),
-                ("q3", 'a', "q2")
-            }, "q0", new List<string> { "q3" });
-        }
-
-        private void btnExample2_Click(object sender, EventArgs e)
-        {
-            PopulateTable(new List<(string, char, string)>
-            {
-                ("q0", '0', "q1"),
-                ("q1", '1', "q2"),
-                ("q2", '0', "q3"),
-                ("q3", '1', "q0"),
-                ("q3", '0', "q2")
-            }, "q0", new List<string> { "q3" });
-        }
-
-        private void btnExample3_Click(object sender, EventArgs e)
-        {
-            PopulateTable(new List<(string, char, string)>
-            {
-                ("q0", 'x', "q1"),
-                ("q0", 'y', "q1"),
-                ("q0", 'z', "q1"),
-                ("q1", 'y', "q2"),
-                ("q2", 'z', "q3"),
-                ("q3", 'x', "q1"),
-                ("q2", 'x', "q1")
-            }, "q0", new List<string> { "q3" });
-        }
-
-        private void PopulateTable(List<(string, char, string)> transitionsList, string startState, List<string> endStates)
-        {
-            dgvTransitions.Rows.Clear();
-            transitions.Clear();
-            initialState = startState;
-            finalStates = endStates;
-
-            foreach (var (from, symbol, to) in transitionsList)
-            {
-                dgvTransitions.Rows.Add(from, symbol.ToString(), to);
-                transitions[(from, symbol)] = to;
-            }
-        }
-
         private void txtFinalStates_TextChanged(object sender, EventArgs e)
         {
 
@@ -120,19 +74,102 @@
 
         }
 
-        private void dgvTransitions_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-
-        }
-
         private void label2_Click(object sender, EventArgs e)
         {
 
         }
 
-        private void lstPath_SelectedIndexChanged(object sender, EventArgs e)
+        private void btnAddColumn_Click(object sender, EventArgs e)
         {
+            int columnIndex = dgvTransitions.Columns.Count + 1;
+            dgvTransitions.Columns.Add("Column" + columnIndex, "" + (columnIndex - 1));
+            dgvTransitions.Columns["Column" + columnIndex].SortMode = DataGridViewColumnSortMode.NotSortable;
+        }
 
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            foreach (DataGridViewColumn col in dgvTransitions.Columns)
+            {
+                col.SortMode = DataGridViewColumnSortMode.NotSortable;
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            dgvTransitions.Rows.Add();
+        }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+            if (dgvTransitions.SelectedCells.Count > 0)
+            {
+                int columnIndex = dgvTransitions.SelectedCells[0].ColumnIndex;
+                if (columnIndex != 0)
+                    dgvTransitions.Columns.RemoveAt(columnIndex);
+            }
+            else
+            {
+                MessageBox.Show("Выберите ячейку в столбце для удаления!");
+            }
+        }
+
+        private void btnDelRow_Click(object sender, EventArgs e)
+        {
+            if (dgvTransitions.SelectedRows.Count > 0)
+            {
+                foreach (DataGridViewRow row in dgvTransitions.SelectedRows)
+                {
+                    if (!row.IsNewRow)  // Не удалять пустую строку для ввода
+                        dgvTransitions.Rows.Remove(row);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Выберите строку для удаления!");
+            }
+        }
+
+        private void dgvTransitions_Leave(object sender, DataGridViewCellEventArgs e)
+        {
+            transitions.Clear();
+            DataGridViewRowCollection rows = dgvTransitions.Rows;
+            for (int i = 0; i < rows.Count - 1; i++)
+            {
+                string? nonTerminalSymbol = rows[i].Cells[0].Value?.ToString();
+                var nextStates = rows[i].Cells;
+                for (int j = 1; j < nextStates.Count; j++)
+                {
+                    // здесь формируется transitions
+                    // <(currentState, nonTerminalSymbol), nextState>
+                    string? nextState = nextStates[j].Value?.ToString();
+                    string currentState = j.ToString();
+                    if (nonTerminalSymbol != null && nextState != null)
+                    {
+                        transitions.Add((currentState, nonTerminalSymbol!), nextState!);
+                    }
+                }
+            }
+        }
+
+        public void printTransitions()
+        {
+            foreach (var transition in transitions)
+            {
+                // Ключ - это кортеж (string, string)
+                var key = transition.Key;
+                var value = transition.Value;
+                // Доступ к элементам кортежа:
+                var state = key.Item1; // первый элемент кортежа
+                var symbol = key.Item2; // второй элемент кортежа
+
+                // Выводим результат
+                MessageBox.Show($"currentState: {state}, nonTerminalSymbol: {symbol}, nextState: {value}");
+            }
+        }
+
+        private void button1_Click_2(object sender, EventArgs e)
+        {
+            printTransitions();
         }
     }
 }
