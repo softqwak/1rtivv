@@ -10,6 +10,14 @@ namespace rtivv1
         private string initialState;
         private List<string> finalStates = new();
 
+        private List<char> charNumber = new() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+        private List<char> charSpot = new() { '.', ',' };
+        private List<char> charSign = new() { '+', '-' };
+        private List<char> charEx = new() { 'e', 'E' };
+
+
+
+
         public Form1()
         {
             InitializeComponent();
@@ -17,11 +25,12 @@ namespace rtivv1
 
         private void btnRecognize_Click(object sender, EventArgs e)
         {
+            unSelectCells();
             string input = txtInput.Text;
             // Старт распознования начинается из 1 состояния
             string currentState = "1";
-            List<string> path = new() { currentState };
-            bool valid = false;
+            List<string> path = new() { };
+            bool valid = true;
 
             foreach (char symbol in input)
             {
@@ -31,17 +40,37 @@ namespace rtivv1
                  * 
                  * В дополнении к path должна быть подсветка ячеек таблицы
                  */
-
-                //if (transitions.TryGetValue((currentState, nonTerminalSymbol), out string nextState))
-                //{
-                //    currentState = nextState;
-                //    path.Add(currentState);
-                //}
-                //else
-                //{
-                //    valid = false;
-                //    break;
-                //}
+                string? nonTerminalSymbol = definitionSymbol(symbol);
+                if (nonTerminalSymbol != null)
+                {
+                    if (transitions.TryGetValue((currentState, nonTerminalSymbol), out string? nextState))
+                    {
+                        int rowNumber = definitionRowNumberByNonTerminalSymbol(nonTerminalSymbol);
+                        try
+                        {
+                            dgvTransitions.Rows[rowNumber].Cells[int.Parse(currentState)].Style.BackColor = Color.LightGreen;
+                            path.Add(currentState + " -> " + nonTerminalSymbol + " -> " + nextState);
+                            currentState = nextState!;
+                        }
+                        catch
+                        {
+                            valid = false;
+                            unSelectCells();
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        valid = false;
+                        unSelectCells();
+                        break;
+                    }
+                }
+                else
+                {
+                    valid = false;
+                    break;
+                }
             }
 
             if (valid)
@@ -57,6 +86,30 @@ namespace rtivv1
 
             lstPath.Items.Clear();
             lstPath.Items.AddRange(path.ToArray());
+        }
+
+        public string? definitionSymbol(char symbol)
+        {
+
+            if (charNumber.Contains(symbol)) { return "Цифра"; }
+            if (charSpot.Contains(symbol)) { return "Точка"; }
+            if (charSign.Contains(symbol)) { return "+, -"; }
+            if (charEx.Contains(symbol)) { return "e"; }
+            return null;
+        }
+
+        public int definitionRowNumberByNonTerminalSymbol(string nonTerminalSymbol)
+        {
+            DataGridViewRowCollection rows = dgvTransitions.Rows;
+            for (int i = 0; i < rows.Count - 1; i++)
+            {
+                string? nonTerminalSymbolInCell = rows[i].Cells[0].Value?.ToString();
+                if (nonTerminalSymbolInCell != null && nonTerminalSymbolInCell == nonTerminalSymbol)
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         private void txtFinalStates_TextChanged(object sender, EventArgs e)
@@ -164,6 +217,19 @@ namespace rtivv1
 
                 // Выводим результат
                 MessageBox.Show($"currentState: {state}, nonTerminalSymbol: {symbol}, nextState: {value}");
+            }
+        }
+
+        private void unSelectCells()
+        {
+            DataGridViewRowCollection rows = dgvTransitions.Rows;
+            for (int i = 0; i < rows.Count - 1; i++)
+            {
+                var nextStates = rows[i].Cells;
+                for (int j = 0; j < nextStates.Count; j++)
+                {
+                    nextStates[j].Style.BackColor = Color.White;
+                }
             }
         }
 
